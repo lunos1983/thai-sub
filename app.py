@@ -202,7 +202,7 @@ with gr.Blocks(title="Thai Untertitel", theme=gr.themes.Soft()) as app:
     gr.Markdown("# 🇹🇭 Thai Untertitel\nVideo hochladen → transkribieren → korrigieren → herunterladen")
 
     with gr.Row():
-        video_input = gr.Video(label="1. Video hochladen")
+        video_input = gr.Video(label="1. Video hochladen", height=160)
 
     transkribieren_btn = gr.Button("▶ Transkribieren", variant="primary", size="lg")
 
