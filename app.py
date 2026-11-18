@@ -96,31 +96,40 @@ def editor_zu_srt(editor_text, timestamps):
     return srt
 
 
-def transkribieren(video_pfad, fortschritt=gr.Progress()):
+def transkribieren(video_pfad):
     global whisper_modell
     print(f"[transcribe] video_pfad type={type(video_pfad)} value={video_pfad!r}")
+
+    def st(msg):
+        return gr.update(value=f"⏳ {msg}", visible=True)
+
+    noop = (None, None, None, gr.update(visible=False), gr.update(visible=False))
+
     if video_pfad is None:
-        raise gr.Error("Please upload a video first.")
+        yield (*noop, gr.update(value="❌ Please upload a video first.", visible=True))
+        return
+
+    yield (*noop, st("Preparing video..."))
 
     arbeitsordner = Path(tempfile.mkdtemp())
     ziel_video = arbeitsordner / "video.mp4"
     shutil.copy(video_pfad, ziel_video)
     print(f"[transcribe] copied to {ziel_video}")
 
-    fortschritt(0.1, desc="Loading model ...")
     if whisper_modell is None:
+        yield (*noop, st("Loading Whisper model (first time ~1 min)..."))
         print("[transcribe] loading whisper model ...")
         whisper_modell = whisper.load_model(MODELL)
         print("[transcribe] model loaded")
 
-    fortschritt(0.4, desc="Transcribing ...")
+    yield (*noop, st("Transcribing Thai audio..."))
     print("[transcribe] starting transcription ...")
     ergebnis = whisper_modell.transcribe(
         str(ziel_video), language="th", fp16=False, verbose=False, word_timestamps=True
     )
     print(f"[transcribe] done, {len(ergebnis['segments'])} segments")
 
-    fortschritt(0.9, desc="Creating subtitles ...")
+    yield (*noop, st("Creating subtitles..."))
     srt_lines = []
     nummer = 1
     for segment in ergebnis["segments"]:
@@ -131,12 +140,13 @@ def transkribieren(video_pfad, fortschritt=gr.Progress()):
 
     editor_text, timestamps = srt_zu_editor(srt_text)
 
-    return (
+    yield (
         editor_text,
         timestamps,
         str(ziel_video),
-        gr.update(visible=True),   # edit_section
-        gr.update(visible=False),  # download_section
+        gr.update(visible=True),
+        gr.update(visible=False),
+        gr.update(value="✅ Done!", visible=True),
     )
 
 
@@ -215,6 +225,7 @@ with gr.Blocks(title="Thai Subtitles", theme=gr.themes.Soft()) as app:
         )
 
     transkribieren_btn = gr.Button("▶ Transcribe", variant="primary", size="lg")
+    status_md = gr.Markdown(visible=False)
 
     with gr.Column(visible=False) as edit_section:
         gr.Markdown("### 2. Review text")
@@ -234,7 +245,7 @@ with gr.Blocks(title="Thai Subtitles", theme=gr.themes.Soft()) as app:
     transkribieren_btn.click(
         fn=transkribieren,
         inputs=[video_input],
-        outputs=[srt_editor, timestamps_state, video_state, edit_section, download_section],
+        outputs=[srt_editor, timestamps_state, video_state, edit_section, download_section, status_md],
     )
     korrigieren_btn.click(
         fn=korrigieren,
