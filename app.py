@@ -5,20 +5,9 @@ import tempfile
 import shutil
 import os
 import re
-import urllib.request
 from pathlib import Path
 from pythainlp.tokenize import word_tokenize
 
-# Font beim Start herunterladen
-os.makedirs("fonts", exist_ok=True)
-if not Path("fonts/NotoSansThai-Regular.ttf").exists():
-    req = urllib.request.Request(
-        "https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400",
-        headers={"User-Agent": "Mozilla/5.0"},
-    )
-    css = urllib.request.urlopen(req).read().decode()
-    font_url = re.search(r"https://fonts\.gstatic\.com[^)]+\.ttf", css).group()
-    urllib.request.urlretrieve(font_url, "fonts/NotoSansThai-Regular.ttf")
 
 MODELL = "turbo"
 MAX_ZEICHEN = 10
