@@ -98,21 +98,27 @@ def editor_zu_srt(editor_text, timestamps):
 
 def transkribieren(video_pfad, fortschritt=gr.Progress()):
     global whisper_modell
+    print(f"[transcribe] video_pfad type={type(video_pfad)} value={video_pfad!r}")
     if video_pfad is None:
         raise gr.Error("Please upload a video first.")
 
     arbeitsordner = Path(tempfile.mkdtemp())
     ziel_video = arbeitsordner / "video.mp4"
     shutil.copy(video_pfad, ziel_video)
+    print(f"[transcribe] copied to {ziel_video}")
 
     fortschritt(0.1, desc="Loading model ...")
     if whisper_modell is None:
+        print("[transcribe] loading whisper model ...")
         whisper_modell = whisper.load_model(MODELL)
+        print("[transcribe] model loaded")
 
     fortschritt(0.4, desc="Transcribing ...")
+    print("[transcribe] starting transcription ...")
     ergebnis = whisper_modell.transcribe(
         str(ziel_video), language="th", fp16=False, verbose=False, word_timestamps=True
     )
+    print(f"[transcribe] done, {len(ergebnis['segments'])} segments")
 
     fortschritt(0.9, desc="Creating subtitles ...")
     srt_lines = []
