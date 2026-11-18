@@ -99,22 +99,22 @@ def editor_zu_srt(editor_text, timestamps):
 def transkribieren(video_pfad, fortschritt=gr.Progress()):
     global whisper_modell
     if video_pfad is None:
-        raise gr.Error("Bitte zuerst ein Video hochladen.")
+        raise gr.Error("Please upload a video first.")
 
     arbeitsordner = Path(tempfile.mkdtemp())
     ziel_video = arbeitsordner / "video.mp4"
     shutil.copy(video_pfad, ziel_video)
 
-    fortschritt(0.1, desc="Lade Modell ...")
+    fortschritt(0.1, desc="Loading model ...")
     if whisper_modell is None:
         whisper_modell = whisper.load_model(MODELL)
 
-    fortschritt(0.4, desc="Transkribiere ...")
+    fortschritt(0.4, desc="Transcribing ...")
     ergebnis = whisper_modell.transcribe(
         str(ziel_video), language="th", fp16=False, verbose=False, word_timestamps=True
     )
 
-    fortschritt(0.9, desc="Erstelle Untertitel ...")
+    fortschritt(0.9, desc="Creating subtitles ...")
     srt_lines = []
     nummer = 1
     for segment in ergebnis["segments"]:
@@ -137,14 +137,14 @@ def transkribieren(video_pfad, fortschritt=gr.Progress()):
 def korrigieren(editor_text, fortschritt=gr.Progress()):
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        raise gr.Error("ANTHROPIC_API_KEY nicht gesetzt.")
+        raise gr.Error("ANTHROPIC_API_KEY not set.")
 
     import anthropic
 
     zeilen = [z.strip() for z in editor_text.strip().split("\n") if z.strip()]
     eintraege = "\n".join(zeilen)
 
-    fortschritt(0.2, desc="Sende an Claude ...")
+    fortschritt(0.2, desc="Sending to Claude ...")
     client = anthropic.Anthropic(api_key=api_key)
     antwort = client.messages.create(
         model="claude-sonnet-4-5",
@@ -163,13 +163,13 @@ Wenn du dir nicht sicher bist, lass den Text unverändert.
         }]
     )
 
-    fortschritt(0.9, desc="Fertig ...")
+    fortschritt(0.9, desc="Done ...")
     return antwort.content[0].text.strip()
 
 
 def einbrennen(editor_text, timestamps, video_pfad, fortschritt=gr.Progress()):
     if not editor_text or not timestamps or not video_pfad:
-        raise gr.Error("Bitte zuerst transkribieren.")
+        raise gr.Error("Please transcribe first.")
 
     arbeitsordner = Path(video_pfad).parent
     srt_text = editor_zu_srt(editor_text, timestamps)
@@ -185,45 +185,45 @@ def einbrennen(editor_text, timestamps, video_pfad, fortschritt=gr.Progress()):
     videofilter = f"subtitles='{srt_datei}':fontsdir='{fonts_pfad}':force_style='{stil}'"
     ziel = arbeitsordner / "video_untertitelt.mp4"
 
-    fortschritt(0.3, desc="Brenne Untertitel ein ...")
+    fortschritt(0.3, desc="Burning subtitles ...")
     subprocess.run(
         ["ffmpeg", "-y", "-i", video_pfad, "-vf", videofilter, "-c:a", "copy", str(ziel)],
         check=True, capture_output=True,
     )
 
-    fortschritt(1.0, desc="Fertig!")
+    fortschritt(1.0, desc="Done!")
     return str(ziel), gr.update(visible=True)
 
 
-with gr.Blocks(title="Thai Untertitel", theme=gr.themes.Soft()) as app:
+with gr.Blocks(title="Thai Subtitles", theme=gr.themes.Soft()) as app:
     timestamps_state = gr.State()
     video_state = gr.State()
 
-    gr.Markdown("# 🇹🇭 Thai Untertitel\nVideo hochladen → transkribieren → korrigieren → herunterladen")
+    gr.Markdown("# 🇹🇭 Thai Subtitles\nUpload video → transcribe → correct → download")
 
     with gr.Row():
         video_input = gr.File(
-            label="1. Video hochladen (.mp4, .mov, .avi ...)",
+            label="1. Upload video (.mp4, .mov, .avi ...)",
             file_types=[".mp4", ".mov", ".avi", ".mkv", ".webm"],
             type="filepath",
         )
 
-    transkribieren_btn = gr.Button("▶ Transkribieren", variant="primary", size="lg")
+    transkribieren_btn = gr.Button("▶ Transcribe", variant="primary", size="lg")
 
     with gr.Column(visible=False) as edit_section:
-        gr.Markdown("### 2. Text prüfen")
+        gr.Markdown("### 2. Review text")
         srt_editor = gr.Textbox(
-            label="Thai-Text (direkt bearbeitbar)",
+            label="Thai text (editable)",
             lines=20,
-            placeholder="Hier erscheint der transkribierte Text ..."
+            placeholder="Transcribed text will appear here ..."
         )
         with gr.Row():
-            korrigieren_btn = gr.Button("🤖 Mit Claude korrigieren", variant="secondary")
-            einbrennen_btn = gr.Button("🔥 Einbrennen & herunterladen", variant="primary")
+            korrigieren_btn = gr.Button("🤖 Correct with Claude", variant="secondary")
+            einbrennen_btn = gr.Button("🔥 Burn & download", variant="primary")
 
     with gr.Column(visible=False) as download_section:
-        gr.Markdown("### 3. Fertig!")
-        video_output = gr.Video(label="Video herunterladen")
+        gr.Markdown("### 3. Done!")
+        video_output = gr.Video(label="Download video")
 
     transkribieren_btn.click(
         fn=transkribieren,
