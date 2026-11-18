@@ -1,4 +1,4 @@
 openai-whisper
 pythainlp
-gradio==4.44.1
+gradio>=5.0,<6.0
 anthropic
