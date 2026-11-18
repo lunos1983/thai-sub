@@ -195,16 +195,18 @@ def einbrennen(editor_text, timestamps, video_pfad, fortschritt=gr.Progress()):
     return str(ziel), gr.update(visible=True)
 
 
-css = "#video-upload video { max-height: 160px !important; object-fit: contain; }"
-
-with gr.Blocks(title="Thai Untertitel", theme=gr.themes.Soft(), css=css) as app:
+with gr.Blocks(title="Thai Untertitel", theme=gr.themes.Soft()) as app:
     timestamps_state = gr.State()
     video_state = gr.State()
 
     gr.Markdown("# 🇹🇭 Thai Untertitel\nVideo hochladen → transkribieren → korrigieren → herunterladen")
 
     with gr.Row():
-        video_input = gr.Video(label="1. Video hochladen", height=160, elem_id="video-upload")
+        video_input = gr.File(
+            label="1. Video hochladen (.mp4, .mov, .avi ...)",
+            file_types=[".mp4", ".mov", ".avi", ".mkv", ".webm"],
+            type="filepath",
+        )
 
     transkribieren_btn = gr.Button("▶ Transkribieren", variant="primary", size="lg")
 
