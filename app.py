@@ -206,7 +206,7 @@ def einbrennen(editor_text, timestamps, video_pfad, fortschritt=gr.Progress()):
     return str(ziel), gr.update(visible=True)
 
 
-with gr.Blocks(title="Thai Untertitel", theme=gr.themes.Soft()) as app:
+with gr.Blocks(title="Thai Untertitel") as app:
     timestamps_state = gr.State()
     video_state = gr.State()
 
@@ -248,4 +248,4 @@ with gr.Blocks(title="Thai Untertitel", theme=gr.themes.Soft()) as app:
         outputs=[video_output, download_section],
     )
 
-app.launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 7860)))
+app.launch(server_name="0.0.0.0", server_port=int(os.environ.get("PORT", 7860)), theme=gr.themes.Soft())
