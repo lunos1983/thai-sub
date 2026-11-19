@@ -9,7 +9,7 @@ from pathlib import Path
 from pythainlp.tokenize import word_tokenize
 
 
-MODELL = "turbo"
+MODELL = "small"
 MAX_ZEICHEN = 10
 ZEILEN_PRO_BLOCK = 1
 PAUSE_SCHWELLE = 0.6
