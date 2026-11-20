@@ -1,5 +1,5 @@
 import gradio as gr
-import whisper
+from faster_whisper import WhisperModel
 import subprocess
 import tempfile
 import shutil
@@ -30,9 +30,9 @@ def srt_zeit(sekunden):
 
 def wortzeiten(segment):
     zeichen = []
-    for stueck in segment.get("words", []):
-        for buchstabe in stueck["word"]:
-            zeichen.append((buchstabe, stueck["start"], stueck["end"]))
+    for stueck in (segment.words or []):
+        for buchstabe in stueck.word:
+            zeichen.append((buchstabe, stueck.start, stueck.end))
     if not zeichen:
         return []
     text = "".join(z[0] for z in zeichen)
@@ -117,22 +117,23 @@ def transkribieren(video_pfad):
     print(f"[transcribe] copied to {ziel_video}")
 
     if whisper_modell is None:
-        yield (*noop, st("Loading Whisper model (first time ~1 min)..."))
+        yield (*noop, st("Loading Whisper model..."))
         print("[transcribe] loading whisper model ...")
-        whisper_modell = whisper.load_model(MODELL)
+        whisper_modell = WhisperModel(MODELL, device="cpu", compute_type="int8")
         print("[transcribe] model loaded")
 
     yield (*noop, st("Transcribing Thai audio..."))
     print("[transcribe] starting transcription ...")
-    ergebnis = whisper_modell.transcribe(
-        str(ziel_video), language="th", fp16=False, verbose=False, word_timestamps=True
+    segments, _ = whisper_modell.transcribe(
+        str(ziel_video), language="th", word_timestamps=True
     )
-    print(f"[transcribe] done, {len(ergebnis['segments'])} segments")
+    segments = list(segments)
+    print(f"[transcribe] done, {len(segments)} segments")
 
     yield (*noop, st("Creating subtitles..."))
     srt_lines = []
     nummer = 1
-    for segment in ergebnis["segments"]:
+    for segment in segments:
         for start, ende, text in bloecke(segment):
             srt_lines.append(f"{nummer}\n{srt_zeit(start)} --> {srt_zeit(ende)}\n{text}\n")
             nummer += 1

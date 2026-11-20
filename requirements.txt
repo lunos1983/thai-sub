@@ -1,4 +1,4 @@
-openai-whisper
+faster-whisper
 pythainlp
 gradio>=5.0,<6.0
 anthropic
