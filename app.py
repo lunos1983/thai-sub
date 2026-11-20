@@ -1,5 +1,7 @@
 import gradio as gr
 from faster_whisper import WhisperModel
+import soundfile as sf
+import numpy as np
 import subprocess
 import tempfile
 import shutil
@@ -116,6 +118,12 @@ def transkribieren(video_pfad):
     shutil.copy(video_pfad, ziel_video)
     print(f"[transcribe] copied to {ziel_video}")
 
+    audio_datei = arbeitsordner / "audio.wav"
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", str(ziel_video), "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(audio_datei)],
+        check=True, capture_output=True,
+    )
+
     if whisper_modell is None:
         yield (*noop, st("Loading Whisper model..."))
         print("[transcribe] loading whisper model ...")
@@ -124,8 +132,9 @@ def transkribieren(video_pfad):
 
     yield (*noop, st("Transcribing Thai audio..."))
     print("[transcribe] starting transcription ...")
+    audio_array, _ = sf.read(str(audio_datei), dtype="float32")
     segments, _ = whisper_modell.transcribe(
-        str(ziel_video), language="th", word_timestamps=True
+        audio_array, language="th", word_timestamps=True
     )
     segments = list(segments)
     print(f"[transcribe] done, {len(segments)} segments")
